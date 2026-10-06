@@ -1,10 +1,18 @@
 experiment_id,features,model,cv_rmse_mean,cv_rmse_std,cv_pearson_mean,cv_pearson_std,oof_rmse,oof_pearson,train_rmse,notes
 EXP-01-MEAN,None,MeanPredictor,1.2382,0.0125,0.0,0.0,1.2383,-0.0162,1.2382,Reference floor baseline
-EXP-02-DUR,Duration,Ridge(alpha=1.0),1.2344,0.0094,0.0849,0.0494,1.2344,0.0786,1.2334,Diagnostic audio duration baseline
-EXP-03-AUDIO-RIDGE,Handcrafted Acoustic (75),Ridge(alpha=50),0.8199,0.0261,0.75,0.0236,0.8203,0.7491,0.7702,Linear L2 regularized acoustic model
-EXP-04-AUDIO-RF,Handcrafted Acoustic (75),RandomForest(depth=6),0.8074,0.0264,0.7591,0.0221,0.8078,0.7591,0.584,Non-linear tree ensemble on acoustics
-EXP-05-AUDIO-LGBM,Handcrafted Acoustic (75),LightGBM,0.8658,0.0208,0.7298,0.0221,0.8661,0.7297,0.7746,Gradient boosted trees on acoustics
-EXP-06-TEXT-RIDGE,Linguistic / Transcript Features,Ridge(alpha=10),1.0311,0.038,0.5564,0.0435,1.0319,0.5528,1.003,Linear linguistic model
-EXP-07-TEXT-RF,Linguistic / Transcript Features,RandomForest(depth=6),1.01,0.037,0.58,0.0409,1.0108,0.5778,0.7283,Non-linear tree ensemble on text
-EXP-08-TEXT-LGBM,Linguistic / Transcript Features,LightGBM,1.0164,0.0303,0.5845,0.039,1.0169,0.5817,0.9031,Gradient boosted trees on text
-EXP-09-COMBINED-RF,Acoustic (75) + Linguistic (23),RandomForest(depth=6),0.7646,0.0288,0.7869,0.0215,0.7651,0.7866,0.5397,Multi-modal acoustic + text ensemble
+EXP-02-DUR,Duration,Ridge(alpha=1.0),1.2344,0.0094,0.0849,0.0494,1.2344,0.0786,1.2335,Diagnostic audio duration baseline
+EXP-03-AUDIO-RIDGE,Handcrafted Acoustic (75),Ridge(alpha=50),0.8199,0.0261,0.75,0.0236,0.8203,0.7491,0.7731,Linear L2 regularized acoustic model
+EXP-04-AUDIO-RF,Handcrafted Acoustic (75),RandomForest(depth=6),0.8074,0.0264,0.7591,0.0221,0.8078,0.7591,0.6043,Non-linear tree ensemble on acoustics
+EXP-05-AUDIO-LGBM,Handcrafted Acoustic (75),LightGBM,0.8658,0.0208,0.7298,0.0221,0.8661,0.7297,0.789,Gradient boosted trees on acoustics
+EXP-06-TEXT-RIDGE,Linguistic / Transcript Features,Ridge(alpha=10),1.0311,0.038,0.5564,0.0435,1.0319,0.5528,1.0059,Linear linguistic model
+EXP-07-TEXT-RF,Linguistic / Transcript Features,RandomForest(depth=6),1.01,0.037,0.58,0.0409,1.0108,0.5778,0.7487,Non-linear tree ensemble on text
+EXP-08-TEXT-LGBM,Linguistic / Transcript Features,LightGBM,1.0164,0.0303,0.5845,0.039,1.0169,0.5817,0.9157,Gradient boosted trees on text
+EXP-09-COMBINED-RF,Acoustic (75) + Linguistic (23),RandomForest(depth=6),0.7646,0.0288,0.7869,0.0215,0.7651,0.7866,0.5642,Multi-modal acoustic + text ensemble
+EXP-10-TFIDF-COMB,Word + Char TF-IDF (600),Ridge(alpha=10),1.0678,0.0198,0.5772,0.0363,1.068,0.5761,0.9611,TF-IDF n-gram text baseline
+EXP-11-EMB-RIDGE,Dense MiniLM Embeddings (384),Ridge(alpha=1.0),0.9518,0.0295,0.6454,0.0259,0.9522,0.6437,0.7749,Frozen sentence transformer embeddings
+EXP-12-EMB-ELASTICNET,Dense MiniLM Embeddings (384),"ElasticNet(alpha=0.01, l1=0.1)",1.0639,0.0281,0.5884,0.0394,1.0643,0.587,1.011,Sparse regularized embedding regression
+EXP-13-LING-EMB-RIDGE,Linguistic (23) + Embeddings (384),Ridge(alpha=1.0),0.8911,0.0332,0.6971,0.0244,0.8917,0.6939,0.7135,Combined text representation
+EXP-14-AUDIO-TFIDF,Acoustic (75) + TF-IDF (600),Ridge(alpha=50),0.7986,0.0248,0.7653,0.0216,0.799,0.7644,0.731,Acoustic + sparse n-gram features
+EXP-15-AUDIO-EMB-RIDGE,Acoustic (75) + Embeddings (384),Ridge(alpha=50),0.8074,0.0253,0.7589,0.0222,0.8077,0.7582,0.7481,Acoustic + dense embeddings
+EXP-16-AUDIO-LING-EMB-RIDGE,Acoustic (75) + Ling (23) + Emb (384),Ridge(alpha=50),0.7375,0.039,0.8045,0.0283,0.7386,0.8032,0.6744,Full multi-modal feature set
+EXP-17-BLEND-RF-EMB,Blend (0.74 Aud+Ling RF + 0.26 MiniLM Ridge),Weighted OOF Blend,0.7363,0.0,0.8205,0.0,0.7363,0.8205,0.5592,Complementary multi-modal ensemble
