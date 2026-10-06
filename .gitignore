@@ -12,6 +12,7 @@ ENV/
 # Data & Models (keep large files out of Git)
 data/
 *.csv
+!artifacts/experiment_log.csv
 *.tsv
 *.parquet
 *.zip

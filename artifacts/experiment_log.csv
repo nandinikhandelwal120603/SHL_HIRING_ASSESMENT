@@ -1,0 +1,6 @@
+experiment_id,features,model,cv_rmse_mean,cv_rmse_std,cv_pearson_mean,cv_pearson_std,oof_rmse,oof_pearson,train_rmse,notes
+EXP-01-MEAN,None,MeanPredictor,1.2382,0.0125,0.0,0.0,1.2383,-0.0162,1.2382,Reference floor baseline
+EXP-02-DUR,Duration,Ridge(alpha=1.0),1.2344,0.0094,0.0849,0.0494,1.2344,0.0786,1.2334,Diagnostic audio duration baseline
+EXP-03-AUDIO-RIDGE,Handcrafted Acoustic (75),Ridge(alpha=50),0.8199,0.0261,0.75,0.0236,0.8203,0.7491,0.7702,Linear L2 regularized acoustic model
+EXP-04-AUDIO-RF,Handcrafted Acoustic (75),RandomForest(depth=6),0.8074,0.0264,0.7591,0.0221,0.8078,0.7591,0.584,Non-linear tree ensemble on acoustics
+EXP-05-AUDIO-LGBM,Handcrafted Acoustic (75),LightGBM,0.8658,0.0208,0.7298,0.0221,0.8661,0.7297,0.7746,Gradient boosted trees on acoustics
