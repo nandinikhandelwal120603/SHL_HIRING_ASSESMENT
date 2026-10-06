@@ -1,0 +1,90 @@
+{
+  "train_csv_shape": [769, 2],
+  "test_csv_shape": [216, 2],
+  "sample_sub_shape": [204, 2],
+  "target_stats": {
+    "target_column": "label",
+    "n_samples": 769,
+    "n_unique": 10,
+    "unique_values": [0.0, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0],
+    "is_integer_valued": false,
+    "min": 0.0,
+    "max": 5.0,
+    "mean": 3.3133940182054618,
+    "std": 1.23899953424107,
+    "median": 3.0,
+    "q25": 2.5,
+    "q75": 4.0,
+    "value_counts": {
+      "0.0": 37,
+      "1.0": 1,
+      "1.5": 3,
+      "2.0": 102,
+      "2.5": 79,
+      "3.0": 174,
+      "3.5": 64,
+      "4.0": 124,
+      "4.5": 52,
+      "5.0": 133
+    }
+  },
+  "train_audio_stats": {
+    "count": 769,
+    "durations_summary": {
+      "min": 20.06,
+      "max": 61.04,
+      "mean": 55.78106697009103,
+      "std": 7.903820312982913,
+      "median": 60.0746875,
+      "p5": 43.212,
+      "p95": 60.167
+    },
+    "file_size_bytes": {
+      "min": 641998,
+      "max": 1953358,
+      "mean": 1785070.5071521457
+    },
+    "sample_rates": [16000],
+    "channels": [1],
+    "subtypes": ["PCM_16"],
+    "clipping_in_sample_30": 1,
+    "silent_in_sample_30": 0,
+    "mean_sample_rms": 0.058401941813927695
+  },
+  "test_audio_stats": {
+    "count": 216,
+    "durations_summary": {
+      "min": 6.48,
+      "max": 61.0346875,
+      "mean": 48.75534056712963,
+      "std": 8.162617024195864,
+      "median": 45.06,
+      "p5": 41.414015625,
+      "p95": 60.08
+    },
+    "file_size_bytes": {
+      "min": 207438,
+      "max": 1953188,
+      "mean": 1560248.898148148
+    },
+    "sample_rates": [16000],
+    "channels": [1],
+    "subtypes": ["PCM_16"],
+    "clipping_in_sample_30": 2,
+    "silent_in_sample_30": 0,
+    "mean_sample_rms": 0.04514056838259098
+  },
+  "data_integrity_and_leakage": {
+    "internal_train_dups": 0,
+    "internal_test_dups": 0,
+    "train_test_overlap_exact_audio_hashes": 0,
+    "filename_collisions_train_vs_test": 212,
+    "note_on_filename_collisions": "212 filenames (e.g. audio_128.wav) appear in both train/ and test/, but have completely different audio contents and MD5 hashes. Audio files must be referenced with full folder paths (train/ vs test/) to prevent collision.",
+    "sample_submission_discrepancy": {
+      "sample_submission_rows": 204,
+      "test_csv_rows": 216,
+      "test_dir_files": 216,
+      "note": "sample_submission.csv has 204 rows referencing non-test filenames, whereas test.csv and the test audio directory have 216 files indexed 0 to 215. The true evaluation test set matches test.csv (216 files)."
+    }
+  }
+}
