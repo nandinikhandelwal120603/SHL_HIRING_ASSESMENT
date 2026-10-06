@@ -90,3 +90,46 @@ def get_audio_lgbm_model(n_estimators: int = 100, learning_rate: float = 0.05, m
         verbose=-1,
         n_jobs=-1
     )
+
+
+def get_text_ridge_pipeline(alpha: float = 10.0):
+    """
+    Model 3D: Ridge Regression on standardized linguistic features.
+    """
+    return Pipeline([
+        ("scaler", StandardScaler()),
+        ("regressor", Ridge(alpha=alpha, random_state=42))
+    ])
+
+
+def get_text_rf_model(n_estimators: int = 100, max_depth: int = 6, random_state: int = 42):
+    """
+    Model 3E: Random Forest Regressor on linguistic features.
+    """
+    return RandomForestRegressor(
+        n_estimators=n_estimators,
+        max_depth=max_depth,
+        min_samples_split=5,
+        min_samples_leaf=2,
+        random_state=random_state,
+        n_jobs=-1
+    )
+
+
+def get_text_lgbm_model(n_estimators: int = 60, learning_rate: float = 0.03, max_depth: int = 3, random_state: int = 42):
+    """
+    Model 3F: LightGBM Regressor on linguistic features.
+    """
+    return LGBMRegressor(
+        n_estimators=n_estimators,
+        learning_rate=learning_rate,
+        max_depth=max_depth,
+        num_leaves=15,
+        min_child_samples=10,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        random_state=random_state,
+        verbose=-1,
+        n_jobs=-1
+    )
+

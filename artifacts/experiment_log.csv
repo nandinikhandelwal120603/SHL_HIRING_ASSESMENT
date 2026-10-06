@@ -4,3 +4,7 @@ EXP-02-DUR,Duration,Ridge(alpha=1.0),1.2344,0.0094,0.0849,0.0494,1.2344,0.0786,1
 EXP-03-AUDIO-RIDGE,Handcrafted Acoustic (75),Ridge(alpha=50),0.8199,0.0261,0.75,0.0236,0.8203,0.7491,0.7702,Linear L2 regularized acoustic model
 EXP-04-AUDIO-RF,Handcrafted Acoustic (75),RandomForest(depth=6),0.8074,0.0264,0.7591,0.0221,0.8078,0.7591,0.584,Non-linear tree ensemble on acoustics
 EXP-05-AUDIO-LGBM,Handcrafted Acoustic (75),LightGBM,0.8658,0.0208,0.7298,0.0221,0.8661,0.7297,0.7746,Gradient boosted trees on acoustics
+EXP-06-TEXT-RIDGE,Linguistic / Transcript Features,Ridge(alpha=10),1.0311,0.038,0.5564,0.0435,1.0319,0.5528,1.003,Linear linguistic model
+EXP-07-TEXT-RF,Linguistic / Transcript Features,RandomForest(depth=6),1.01,0.037,0.58,0.0409,1.0108,0.5778,0.7283,Non-linear tree ensemble on text
+EXP-08-TEXT-LGBM,Linguistic / Transcript Features,LightGBM,1.0164,0.0303,0.5845,0.039,1.0169,0.5817,0.9031,Gradient boosted trees on text
+EXP-09-COMBINED-RF,Acoustic (75) + Linguistic (23),RandomForest(depth=6),0.7646,0.0288,0.7869,0.0215,0.7651,0.7866,0.5397,Multi-modal acoustic + text ensemble
