@@ -17,6 +17,7 @@ data/
 !submission/final_submission.csv
 !submission/final_submission_trimodal.csv
 !submission/final_submission_all_ridge.csv
+!submission/nandini_khandelwal.csv
 *.tsv
 *.parquet
 *.zip
