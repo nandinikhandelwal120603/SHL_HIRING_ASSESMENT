@@ -977,19 +977,27 @@ cells.append(nbf.v4.new_markdown_cell("""## 10. Phase 5 - Robustness Checks & Pr
 ### 10.1 Methodological Check: Blend Optimism Disclosure
 > “The blend weights were optimized using OOF predictions. Because the same OOF predictions were then used to evaluate the blend, this estimate can be slightly optimistic. We therefore perform additional robustness checks before treating the blend as our final benchmark.”
 
-### 10.2 Multi-Seed Robustness Check (Seeds: 42, 123, 2026)
+### 10.2 Multi-Seed Robustness Check & Blend Comparison (Seeds: 42, 123, 2026)
+
 #### What are we doing?
-We repeat the 5-fold stratified cross-validation for our two shortlisted models across three independent random seeds: `42`, `123`, and `2026`.
+We evaluate the Acoustic + Linguistic Random Forest and the MiniLM Ridge model across three independent random seeds (`42`, `123`, `2026`) and compare two fixed, predetermined blends:
+1. **75% RF + 25% MiniLM**
+2. **70% RF + 30% MiniLM**
 
 #### Why are we doing it?
-> “Our dataset is small, so one particular train/validation split could make a model look slightly better or worse by chance. Testing a few random seeds helps us see whether the improvement is stable.”
+On Seed 42, we observed:
+* **75/25**: Pearson = $0.8194$, RMSE = $0.7369$
+* **70/30**: Pearson = $0.8232$, RMSE = $0.7383$
+
+We must **not** choose 70/30 based on one lucky seed split. We need an interview-defensible final model. If 70/30 and 75/25 are essentially tied across seeds, we prefer 75/25 for simplicity.
 """))
 
-cells.append(nbf.v4.new_code_cell(r"""# Multi-Seed Cross-Validation Check
+cells.append(nbf.v4.new_code_cell(r"""# Multi-Seed Cross-Validation & Blend Robustness Check
 seeds = [42, 123, 2026]
 results_rf_seeds = []
 results_ridge_seeds = []
-results_blend_seeds = []
+results_blend75_seeds = []
+results_blend70_seeds = []
 
 X_comb_al = pd.concat([X_audio, X_text], axis=1)
 
@@ -1002,79 +1010,74 @@ for s in seeds:
     res_rf_s = evaluate_cv(X_comb_al, y_true, folds_s, get_comb_rf)
     res_rg_s = evaluate_cv(X_emb, y_true, folds_s, get_emb_ridge)
     
-    # Simple fixed 75/25 blend on this seed's OOF predictions
-    b_pred_s = 0.75 * res_rf_s['oof_preds'] + 0.25 * res_rg_s['oof_preds']
-    b_rmse_s = float(root_mean_squared_error(y_true, b_pred_s))
-    b_r_s = float(safe_pearsonr(y_true, b_pred_s))
+    # Predetermined 75/25 blend on this seed's OOF predictions
+    b75_pred_s = 0.75 * res_rf_s['oof_preds'] + 0.25 * res_rg_s['oof_preds']
+    b75_rmse_s = float(root_mean_squared_error(y_true, b75_pred_s))
+    b75_r_s = float(safe_pearsonr(y_true, b75_pred_s))
+    
+    # Predetermined 70/30 blend on this seed's OOF predictions
+    b70_pred_s = 0.70 * res_rf_s['oof_preds'] + 0.30 * res_rg_s['oof_preds']
+    b70_rmse_s = float(root_mean_squared_error(y_true, b70_pred_s))
+    b70_r_s = float(safe_pearsonr(y_true, b70_pred_s))
     
     results_rf_seeds.append({'Seed': s, 'OOF RMSE': res_rf_s['oof_rmse'], 'OOF Pearson': res_rf_s['oof_pearson']})
     results_ridge_seeds.append({'Seed': s, 'OOF RMSE': res_rg_s['oof_rmse'], 'OOF Pearson': res_rg_s['oof_pearson']})
-    results_blend_seeds.append({'Seed': s, 'OOF RMSE': b_rmse_s, 'OOF Pearson': b_r_s})
+    results_blend75_seeds.append({'Seed': s, 'OOF RMSE': b75_rmse_s, 'OOF Pearson': b75_r_s})
+    results_blend70_seeds.append({'Seed': s, 'OOF RMSE': b70_rmse_s, 'OOF Pearson': b70_r_s})
 
 df_rf_seeds = pd.DataFrame(results_rf_seeds)
 df_rg_seeds = pd.DataFrame(results_ridge_seeds)
-df_bl_seeds = pd.DataFrame(results_blend_seeds)
+df_bl75_seeds = pd.DataFrame(results_blend75_seeds)
+df_bl70_seeds = pd.DataFrame(results_blend70_seeds)
 
-print("=== Multi-Seed Robustness Summary ===")
+print("=== Multi-Seed Robustness Summary (Seeds: 42, 123, 2026) ===")
 print(f"Acoustic+Ling RF:  Mean RMSE = {df_rf_seeds['OOF RMSE'].mean():.4f} +/- {df_rf_seeds['OOF RMSE'].std():.4f} | Mean Pearson = {df_rf_seeds['OOF Pearson'].mean():.4f} +/- {df_rf_seeds['OOF Pearson'].std():.4f}")
 print(f"MiniLM Ridge:      Mean RMSE = {df_rg_seeds['OOF RMSE'].mean():.4f} +/- {df_rg_seeds['OOF RMSE'].std():.4f} | Mean Pearson = {df_rg_seeds['OOF Pearson'].mean():.4f} +/- {df_rg_seeds['OOF Pearson'].std():.4f}")
-print(f"Fixed 75/25 Blend: Mean RMSE = {df_bl_seeds['OOF RMSE'].mean():.4f} +/- {df_bl_seeds['OOF RMSE'].std():.4f} | Mean Pearson = {df_bl_seeds['OOF Pearson'].mean():.4f} +/- {df_bl_seeds['OOF Pearson'].std():.4f}")
+print(f"Fixed 75/25 Blend: Mean RMSE = {df_bl75_seeds['OOF RMSE'].mean():.4f} +/- {df_bl75_seeds['OOF RMSE'].std():.4f} | Mean Pearson = {df_bl75_seeds['OOF Pearson'].mean():.4f} +/- {df_bl75_seeds['OOF Pearson'].std():.4f}")
+print(f"Fixed 70/30 Blend: Mean RMSE = {df_bl70_seeds['OOF RMSE'].mean():.4f} +/- {df_bl70_seeds['OOF RMSE'].std():.4f} | Mean Pearson = {df_bl70_seeds['OOF Pearson'].mean():.4f} +/- {df_bl70_seeds['OOF Pearson'].std():.4f}")
+
+df_blend_compare = pd.DataFrame([
+    {
+        'Blend Specification': '75% RF + 25% MiniLM',
+        'Seed 42 Pearson': df_bl75_seeds.loc[df_bl75_seeds['Seed'] == 42, 'OOF Pearson'].values[0],
+        'Seed 123 Pearson': df_bl75_seeds.loc[df_bl75_seeds['Seed'] == 123, 'OOF Pearson'].values[0],
+        'Seed 2026 Pearson': df_bl75_seeds.loc[df_bl75_seeds['Seed'] == 2026, 'OOF Pearson'].values[0],
+        'Mean Pearson ± Std': f"{df_bl75_seeds['OOF Pearson'].mean():.4f} ± {df_bl75_seeds['OOF Pearson'].std():.4f}",
+        'Mean RMSE ± Std': f"{df_bl75_seeds['OOF RMSE'].mean():.4f} ± {df_bl75_seeds['OOF RMSE'].std():.4f}",
+    },
+    {
+        'Blend Specification': '70% RF + 30% MiniLM',
+        'Seed 42 Pearson': df_bl70_seeds.loc[df_bl70_seeds['Seed'] == 42, 'OOF Pearson'].values[0],
+        'Seed 123 Pearson': df_bl70_seeds.loc[df_bl70_seeds['Seed'] == 123, 'OOF Pearson'].values[0],
+        'Seed 2026 Pearson': df_bl70_seeds.loc[df_bl70_seeds['Seed'] == 2026, 'OOF Pearson'].values[0],
+        'Mean Pearson ± Std': f"{df_bl70_seeds['OOF Pearson'].mean():.4f} ± {df_bl70_seeds['OOF Pearson'].std():.4f}",
+        'Mean RMSE ± Std': f"{df_bl70_seeds['OOF RMSE'].mean():.4f} ± {df_bl70_seeds['OOF RMSE'].std():.4f}",
+    }
+])
+display(df_blend_compare)
 """))
 
-cells.append(nbf.v4.new_markdown_cell("""### 10.3 Simple Non-Optimized Blending Check
+cells.append(nbf.v4.new_markdown_cell("""### What did we learn?
+1. **Both blends perform virtually identically across seeds**:
+   - 75/25 achieves Mean Pearson = $0.8189 \pm 0.0012$, Mean RMSE = $0.7374 \pm 0.0018$.
+   - 70/30 achieves Mean Pearson = $0.8222 \pm 0.0010$, Mean RMSE = $0.7387 \pm 0.0016$.
+2. **Avoiding Over-Optimization**:
+   - Because 70/30 and 75/25 are essentially tied across seeds, we do not perform an exhaustive weight search.
+   - We prefer **75/25** as our primary robust benchmark for simplicity and interview defensibility.
+"""))
+
+cells.append(nbf.v4.new_markdown_cell("""### 10.3 Pretrained Speech Embeddings (`facebook/wav2vec2-base`)
 
 #### What are we doing?
-We evaluate fixed, predetermined blending ratios (100/0, 75/25, 70/30, 50/50) without optimizing any weights on OOF predictions.
+We extract dense speech representations using the frozen speech transformer `facebook/wav2vec2-base` (94.4M parameters). We pool frame representations across time via mean and standard deviation into a 1536-dimensional vector per audio file, and evaluate regularized linear models (Ridge and ElasticNet).
 
 #### Why are we doing it?
-We want an interview-defensible result:
-> “The two models were complementary, so a simple 75/25 blend improved validation performance.”
-That is easier to defend than:
-> “We optimized 137 possible weights and selected 0.737.”
-"""))
+> “We tested a pretrained speech representation because handcrafted features summarize a limited set of acoustic properties. If the pretrained representation captures additional useful information, it should improve out-of-fold performance.”
 
-cells.append(nbf.v4.new_code_cell(r"""# Predetermined Blends on Seed 42
-oof_rf_42 = res_comb_rf['oof_preds']
-oof_rg_42 = res_emb_ridge['oof_preds']
-
-predet_results = []
-for w_rf, w_rg in [(1.0, 0.0), (0.75, 0.25), (0.70, 0.30), (0.50, 0.50)]:
-    b_pred = w_rf * oof_rf_42 + w_rg * oof_rg_42
-    b_rmse = root_mean_squared_error(y_true, b_pred)
-    b_r = safe_pearsonr(y_true, b_pred)
-    full_train = np.clip(w_rf * res_comb_rf['fitted_models'][0].predict(X_comb_al) + w_rg * res_emb_ridge['fitted_models'][0].predict(X_emb), 0.0, 5.0)
-    tr_rmse = root_mean_squared_error(y_true, full_train)
-    predet_results.append({
-        'Blend Specification': f"{int(w_rf*100)}% RF + {int(w_rg*100)}% MiniLM",
-        'OOF RMSE': round(b_rmse, 4),
-        'OOF Pearson': round(b_r, 4),
-        'Train RMSE': round(tr_rmse, 4)
-    })
-
-df_predet = pd.DataFrame(predet_results)
-display(df_predet)
-
-tracker.record("EXP-17-SIMPLE-BLEND-75", "75% RF + 25% MiniLM", "Fixed Predetermined Blend", {
-    "cv_rmse_mean": df_predet.iloc[1]['OOF RMSE'], "cv_rmse_std": 0.0,
-    "cv_pearson_mean": df_predet.iloc[1]['OOF Pearson'], "cv_pearson_std": 0.0,
-    "oof_rmse": df_predet.iloc[1]['OOF RMSE'], "oof_pearson": df_predet.iloc[1]['OOF Pearson'],
-    "train_rmse": df_predet.iloc[1]['Train RMSE'], "oof_preds": 0.75 * oof_rf_42 + 0.25 * oof_rg_42
-}, "Robust non-optimized 3:1 blend")
-"""))
-
-cells.append(nbf.v4.new_markdown_cell("""### 10.4 Pretrained Speech Embeddings (`facebook/wav2vec2-base`)
-
-#### What are we doing?
-We extract dense speech representations using the frozen speech transformer `facebook/wav2vec2-base` (94.4M parameters), pooling the frame representations across time via mean and standard deviation into a 1536-dimensional embedding, and train regularized linear models (Ridge and ElasticNet).
-
-#### Why are we doing it?
-> “Our handcrafted acoustic features summarize things such as pauses, energy, pitch and spectral characteristics. A pretrained speech encoder may capture richer patterns in speech that are difficult to describe manually, so we test a frozen speech representation as another source of information.”
-
-#### Computational Trade-off & Practicality
+#### Computational Trade-off & Practicality:
 * **Model Size**: 94.4M parameters (~360 MB float32 weights).
 * **Extraction Time**: Processed on Apple Silicon GPU (`mps`) at ~0.76s per 50-second audio sample.
-* **Dimensionality**: Frame representation (768) pooled with mean (768) and standard deviation (768) $\to$ 1536 features per audio recording.
-* **Regularization Choice**:
+* **Regularization**:
   > “The information in dense embeddings is distributed across many dimensions, so a regularized linear model is a natural first choice. It also reduces the risk of fitting noise in a small dataset.”
 """))
 
@@ -1110,7 +1113,7 @@ def get_speech_elasticnet():
 res_speech_elasticnet = evaluate_cv(X_speech, y_true, folds, get_speech_elasticnet)
 tracker.record("EXP-19-SPEECH-ELASTICNET", "Dense Speech Embeddings (1536)", "ElasticNet(alpha=0.05, l1=0.1)", res_speech_elasticnet, "Sparse regularized speech regression")
 
-print(f"=== Model 5A: Speech Embedding Ridge ===")
+print(f"=== Model 5A: Speech Embedding Only + Ridge ===")
 print(f"Training RMSE: {res_speech_ridge['train_rmse']:.4f}  (COMPULSORY)")
 print(f"OOF RMSE:      {res_speech_ridge['oof_rmse']:.4f}")
 print(f"OOF Pearson:   {res_speech_ridge['oof_pearson']:.4f}")
@@ -1121,14 +1124,17 @@ print(f"OOF RMSE:      {res_speech_elasticnet['oof_rmse']:.4f}")
 print(f"OOF Pearson:   {res_speech_elasticnet['oof_pearson']:.4f}")
 """))
 
-cells.append(nbf.v4.new_markdown_cell("""### 10.5 Feature Combinations with Pretrained Speech Embeddings
+cells.append(nbf.v4.new_markdown_cell("""### 10.4 Feature Combinations with Pretrained Speech Embeddings
 
 #### What are we doing?
-We evaluate regularized combinations:
-1. **Acoustic + Speech**: Handcrafted acoustic features (75) + Speech embeddings (1536).
-2. **Linguistic + Speech**: Handcrafted linguistic features (23) + Speech embeddings (1536).
-3. **Acoustic + Linguistic + Speech**: Handcrafted (98) + Speech embeddings (1536).
-4. **All Modalities**: Acoustic (75) + Linguistic (23) + Text MiniLM (384) + Speech wav2vec2 (1536).
+We systematically evaluate combinations with pretrained speech embeddings:
+* **Combination A**: Speech Embedding Only + Ridge (EXP-18)
+* **Combination B**: Acoustic + Speech Embedding + Ridge (EXP-20)
+* **Combination C**: Acoustic + Linguistic + Speech Embedding + Ridge (EXP-22)
+* **Combination D**: All Modalities (Acoustic + Linguistic + Text MiniLM + Speech wav2vec2) + Ridge (EXP-23)
+
+#### Why are we doing it?
+We want to verify whether combining speech embeddings with our handcrafted features provides incremental value over speech embeddings alone.
 """))
 
 cells.append(nbf.v4.new_code_cell(r"""# Feature Matrices
@@ -1143,35 +1149,44 @@ def get_combo_ridge():
         ('ridge', Ridge(alpha=100.0, random_state=SEED))
     ])
 
+# Combination B: Acoustic + Speech Embedding + Ridge
 res_aud_sp = evaluate_cv(X_aud_sp, y_true, folds, get_combo_ridge)
 tracker.record("EXP-20-AUDIO-SPEECH", "Acoustic (75) + Speech (1536)", "Ridge(alpha=100)", res_aud_sp, "Handcrafted + deep speech representations")
 
+# Linguistic + Speech Embedding + Ridge
 res_ling_sp = evaluate_cv(X_ling_sp, y_true, folds, get_combo_ridge)
 tracker.record("EXP-21-LING-SPEECH", "Linguistic (23) + Speech (1536)", "Ridge(alpha=100)", res_ling_sp, "Handcrafted text + deep speech representations")
 
+# Combination C: Acoustic + Linguistic + Speech Embedding + Ridge
 res_aud_ling_sp = evaluate_cv(X_aud_ling_sp, y_true, folds, get_combo_ridge)
 tracker.record("EXP-22-AUD-LING-SPEECH", "Acoustic (75) + Ling (23) + Speech (1536)", "Ridge(alpha=100)", res_aud_ling_sp, "Multi-modal acoustic, text & speech representations")
 
+# Combination D: All Modalities (Acoustic + Ling + Text MiniLM + Speech wav2vec2 = 2018 feats)
 res_all_mod = evaluate_cv(X_all_modalities, y_true, folds, get_combo_ridge)
 tracker.record("EXP-23-ALL-MODALITIES", "Acoustic + Ling + TextEmb + SpeechEmb (2018)", "Ridge(alpha=100)", res_all_mod, "Complete unified multi-modal feature set")
 
-print(f"Acoustic + Speech Ridge:          OOF RMSE = {res_aud_sp['oof_rmse']:.4f}, Pearson = {res_aud_sp['oof_pearson']:.4f}, Train RMSE = {res_aud_sp['train_rmse']:.4f}")
-print(f"Linguistic + Speech Ridge:        OOF RMSE = {res_ling_sp['oof_rmse']:.4f}, Pearson = {res_ling_sp['oof_pearson']:.4f}, Train RMSE = {res_ling_sp['train_rmse']:.4f}")
-print(f"Acoustic + Ling + Speech Ridge:   OOF RMSE = {res_aud_ling_sp['oof_rmse']:.4f}, Pearson = {res_aud_ling_sp['oof_pearson']:.4f}, Train RMSE = {res_aud_ling_sp['train_rmse']:.4f}")
-print(f"All Modalities Ridge (Unified):   OOF RMSE = {res_all_mod['oof_rmse']:.4f}, Pearson = {res_all_mod['oof_pearson']:.4f}, Train RMSE = {res_all_mod['train_rmse']:.4f}")
+print(f"Combination B (Acoustic + Speech Ridge):        OOF RMSE = {res_aud_sp['oof_rmse']:.4f}, Pearson = {res_aud_sp['oof_pearson']:.4f}, Train RMSE = {res_aud_sp['train_rmse']:.4f}")
+print(f"Linguistic + Speech Ridge:                      OOF RMSE = {res_ling_sp['oof_rmse']:.4f}, Pearson = {res_ling_sp['oof_pearson']:.4f}, Train RMSE = {res_ling_sp['train_rmse']:.4f}")
+print(f"Combination C (Acoustic + Ling + Speech Ridge): OOF RMSE = {res_aud_ling_sp['oof_rmse']:.4f}, Pearson = {res_aud_ling_sp['oof_pearson']:.4f}, Train RMSE = {res_aud_ling_sp['train_rmse']:.4f}")
+print(f"Combination D (All Modalities Ridge):           OOF RMSE = {res_all_mod['oof_rmse']:.4f}, Pearson = {res_all_mod['oof_pearson']:.4f}, Train RMSE = {res_all_mod['train_rmse']:.4f}")
 """))
 
-cells.append(nbf.v4.new_markdown_cell("""### 10.6 Model Complementarity & Multi-Modal Blending
+cells.append(nbf.v4.new_markdown_cell("""### 10.5 Decision Rule for wav2vec2 & Complementary Multi-Modal Blending
 
-#### What are we doing?
-We inspect prediction and residual correlations between:
+#### Decision Rule Evaluation:
+> “We tested a pretrained speech representation because handcrafted features summarize a limited set of acoustic properties. If the pretrained representation captures additional useful information, it should improve out-of-fold performance.”
+>
+> **Outcome**: The pretrained speech representation provided a massive, repeatable validation improvement across all folds and seeds:
+> * Speech-only Ridge reached **OOF Pearson = 0.8523** and **OOF RMSE = 0.6477** (vs benchmark 0.8189 / 0.7374).
+> * The unified all-modalities Ridge reached **OOF Pearson = 0.8671** and **OOF RMSE = 0.6170**.
+>
+> If it had not improved consistently over our simpler multimodal baseline, we would not have retained it in the final system. Because the improvement is substantial and consistent across seeds, we retain it.
+
+#### Multi-Modal Independence & Tri-Modal Blend:
+We inspect residual correlations between our three diverse candidate models:
 1. `Acoustic + Linguistic RF` (EXP-09)
 2. `MiniLM Text Ridge` (EXP-11)
 3. `wav2vec2 Speech Ridge` (EXP-18)
-and evaluate simple, predetermined blends.
-
-#### Why are we doing it?
-> “If two models make different mistakes, combining them may improve generalization.”
 """))
 
 cells.append(nbf.v4.new_code_cell(r"""oof_rf_m = res_comb_rf['oof_preds']
@@ -1183,13 +1198,13 @@ res_rf_m = oof_rf_m - y_true
 res_txt_m = oof_txt_m - y_true
 res_sp_m = oof_sp_m - y_true
 
-print("=== Model Independence Analysis ===")
+print("=== Model Error Independence Analysis ===")
 print(f"Pred corr (RF, Speech Ridge):     {stats.pearsonr(oof_rf_m, oof_sp_m)[0]:.4f}")
 print(f"Pred corr (MiniLM, Speech Ridge): {stats.pearsonr(oof_txt_m, oof_sp_m)[0]:.4f}")
 print(f"Residual corr (RF, Speech Ridge): {stats.pearsonr(res_rf_m, res_sp_m)[0]:.4f}")
 print(f"Residual corr (MiniLM, Speech):   {stats.pearsonr(res_txt_m, res_sp_m)[0]:.4f}")
 
-# Simple Predetermined Tri-Modal Blend (50% Speech + 30% RF + 20% MiniLM)
+# Predetermined Tri-Modal Blend (50% Speech + 30% RF + 20% MiniLM)
 oof_tri_blend = 0.50 * oof_sp_m + 0.30 * oof_rf_m + 0.20 * oof_txt_m
 tri_rmse = float(root_mean_squared_error(y_true, oof_tri_blend))
 tri_r = float(safe_pearsonr(y_true, oof_tri_blend))
@@ -1217,10 +1232,10 @@ print(f"OOF RMSE:      {tri_rmse:.4f}")
 print(f"OOF Pearson:   {tri_r:.4f}")
 """))
 
-cells.append(nbf.v4.new_markdown_cell("""### 10.7 Error Analysis Across Score Tiers
+cells.append(nbf.v4.new_markdown_cell("""### 10.6 Error Analysis Across Score Tiers
 
 #### What are we doing?
-We compare performance across score tiers:
+We analyze residual error across three score tiers:
 * **Low**: $y \le 2.5$ ($N = 222$)
 * **Mid**: $2.5 < y \le 3.5$ ($N = 238$)
 * **High**: $y > 3.5$ ($N = 309$)
@@ -1253,7 +1268,7 @@ df_tiers = pd.DataFrame(tier_data)
 display(df_tiers.pivot(index='Score Tier', columns='Model', values=['Tier RMSE', 'Tier Pearson']))
 """))
 
-cells.append(nbf.v4.new_code_cell(r"""# Visualizations 10, 11 & 12: Residual Distributions, True vs Predicted & Tier RMSE
+cells.append(nbf.v4.new_code_cell(r"""# Visualizations: Residuals, True vs Predicted & Tier RMSE
 fig, axes = plt.subplots(1, 3, figsize=(16, 4.8), dpi=100)
 
 # 1. Residual KDE Comparison
@@ -1261,7 +1276,7 @@ sns.kdeplot(res_rf_m, ax=axes[0], label=f"Acoustic+Ling RF (RMSE: {res_comb_rf['
 sns.kdeplot(res_sp_m, ax=axes[0], label=f"Speech Ridge (RMSE: {res_speech_ridge['oof_rmse']:.3f})", color='#e67e22', linewidth=1.8)
 sns.kdeplot(oof_tri_blend - y_true, ax=axes[0], label=f"Tri-Modal Blend (RMSE: {tri_rmse:.3f})", color='#27ae60', linewidth=2.0)
 axes[0].axvline(0, color='#e74c3c', linestyle='--', linewidth=1.2)
-axes[0].set_title("Residual Distributions: RF vs Speech vs Blend", fontsize=11, fontweight='bold')
+axes[0].set_title("Residual Distributions", fontsize=11, fontweight='bold')
 axes[0].set_xlabel("Residual Error (Predicted - True)", fontsize=10)
 axes[0].set_ylabel("Density", fontsize=10)
 axes[0].legend(fontsize=8, frameon=True)
@@ -1272,7 +1287,7 @@ sns.regplot(x=y_true, y=oof_tri_blend, ax=axes[1],
             scatter_kws={'alpha': 0.45, 'color': '#27ae60'},
             line_kws={'color': '#e74c3c', 'linewidth': 2})
 axes[1].plot([0, 5], [0, 5], '--', color='#7f8c8d', linewidth=1.5, label='Ideal 1:1')
-axes[1].set_title(f"Tri-Modal Blend: True vs Predicted (r = {tri_r:.4f})", fontsize=11, fontweight='bold')
+axes[1].set_title(f"Tri-Modal Blend: True vs Pred (r = {tri_r:.4f})", fontsize=11, fontweight='bold')
 axes[1].set_xlabel("True Grammar Score", fontsize=10)
 axes[1].set_ylabel("Out-of-Fold Predicted Score", fontsize=10)
 axes[1].set_xlim(-0.2, 5.2)
@@ -1294,30 +1309,36 @@ plt.tight_layout()
 plt.show()
 """))
 
-cells.append(nbf.v4.new_markdown_cell("""### 10.8 Final Model Decision & Interview Defense
+cells.append(nbf.v4.new_markdown_cell("""### 10.7 Final Model Selection Table
 
-#### Decision Hierarchy:
-1. **Robust CV / OOF Performance**:
-   - **Tri-Modal Blend**: $\text{OOF Pearson} = \mathbf{0.8786}$, $\text{OOF RMSE} = \mathbf{0.6304}$.
-   - **All-Modalities Ridge**: $\text{OOF Pearson} = \mathbf{0.8671}$, $\text{OOF RMSE} = \mathbf{0.6170}$.
-2. **Stability Across Random Seeds**:
-   - Both models demonstrated remarkable stability across seeds `42`, `123`, `2026`:
-     - All-Modalities Ridge: $0.8675 \pm 0.0007$
-     - Tri-Modal Blend: $0.8780 \pm 0.0010$
-3. **Simplicity & Interpretability**:
-   - The Tri-Modal Blend ($50\%$ Speech Ridge + $30\%$ Acoustic-Linguistic RF + $20\%$ Text MiniLM Ridge) is intuitive: it blends three complementary perspectives of spoken language:
-     - **Non-linear acoustic pauses and cadence** (Random Forest)
-     - **Semantic and syntactical transcript quality** (MiniLM Ridge)
-     - **Continuous acoustic timbre, phonetics, and pronunciation** (wav2vec2 Ridge)
-4. **Computational Practicality**:
-   - All pretrained encoders (`all-MiniLM-L6-v2`, `wav2vec2-base`) remain completely frozen.
-   - Downstream models are linear Ridge regressors and shallow Random Forests that fit in seconds without GPU clusters or end-to-end backpropagation risk.
+We construct the definitive decision table comparing only the serious candidate architectures across all evaluated dimensions:
+
+| Model | OOF RMSE | OOF Pearson | Seed Stability | Complexity | Decision |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Acoustic + Linguistic RF** | 0.7634 ± 0.0036 | 0.7878 ± 0.0024 | High (±0.0024) | Low | Strong tabular baseline; retained in ensemble |
+| **75/25 RF + MiniLM** | 0.7374 ± 0.0018 | 0.8189 ± 0.0012 | Very High (±0.0012) | Medium | Robust multimodal baseline benchmark |
+| **70/30 RF + MiniLM** | 0.7387 ± 0.0016 | 0.8222 ± 0.0010 | Very High (±0.0010) | Medium | Statistically tied with 75/25 (prefer 75/25 for simplicity) |
+| **Best Speech Model (wav2vec2 Ridge)** | 0.6467 ± 0.0035 | 0.8528 ± 0.0017 | High (±0.0017) | High | Strong single representation; justifies complexity |
+| **All-Modalities Ridge (Unified)** | 0.6161 ± 0.0015 | 0.8675 ± 0.0007 | Exceptional (±0.0007) | High | Best single linear model |
+| **Tri-Modal Blend (50% Speech + 30% RF + 20% MiniLM)** | **0.6312 ± 0.0012** | **0.8780 ± 0.0010** | **Exceptional (±0.0010)** | **High** | **SELECTED FINAL MODEL** (Highest correlation & error diversity) |
+"""))
+
+cells.append(nbf.v4.new_markdown_cell("""### 10.8 Final Research Conclusion
+
+> “We progressively added information sources rather than increasing model complexity blindly. Acoustic features gave us a strong baseline, linguistic features improved it, and a frozen text embedding provided complementary information. We retained additional components only when cross-validation showed a consistent improvement.”
+
+### 10.9 Stopping Rule
+
+Once the final model was selected, we stopped model development to prevent overfitting to the cross-validation protocol. We progressed directly through:
+`Final Training on All 769 Samples` $\to$ `Test Prediction on 216 Samples` $\to$ `Submission Verification` $\to$ `Final Deliverables Generation`.
 """))
 
 # ==============================================================================
 # SECTION 11: COMPLETE EXPERIMENT TABLE
 # ==============================================================================
 cells.append(nbf.v4.new_markdown_cell("""## 11. Final Comprehensive Experiment Comparison Table
+
+Below is the complete audit of all 24 progressive experiments recorded across the five modeling phases.
 
 *Note*: The Phase 4 optimized blend is marked with an asterisk (`*`) to denote potential optimistic bias from weight search on OOF predictions, resolved by our Phase 5 multi-seed and fixed-weight checks.
 """))
@@ -1334,9 +1355,13 @@ display(summary_table)
 # ==============================================================================
 # SECTION 12: SUBMISSION FILE GENERATION
 # ==============================================================================
-cells.append(nbf.v4.new_markdown_cell("""## 12. Submission Generation
+cells.append(nbf.v4.new_markdown_cell("""## 12. Final Training & Test Prediction Generation
 
-We generate final test predictions for all 216 test audio files using our validated models and format the CSV strictly according to competition requirements.
+#### What are we doing?
+1. We fit all final model components using the **entire training set** of 769 labelled samples.
+2. We generate continuous predictions for all **216 actual evaluation audio files** (`audio_0.wav` through `audio_215.wav`).
+3. We clip predictions to the rubric domain $[0.0, 5.0]$.
+4. We preserve the exact ordering of `test.csv`.
 """))
 
 cells.append(nbf.v4.new_code_cell(r"""# Retrain full components on all 769 training samples
@@ -1361,14 +1386,84 @@ test_preds_rf = np.clip(full_rf.predict(X_comb_test), 0.0, 5.0)
 test_preds_txt = np.clip(full_txt.predict(X_emb_test), 0.0, 5.0)
 test_preds_sp = np.clip(full_sp.predict(X_speech_test), 0.0, 5.0)
 
-# Final Tri-Modal Blend Test Predictions
+# Final Tri-Modal Blend Test Predictions (50% Speech + 30% RF + 20% MiniLM)
 final_test_preds = 0.50 * test_preds_sp + 0.30 * test_preds_rf + 0.20 * test_preds_txt
+final_test_preds = np.clip(final_test_preds, 0.0, 5.0)
 
-# Format and save submission
-submission_path = os.path.join(ARTIFACTS_DIR, "submission_final_trimodal.csv")
-sub_df = format_submission(final_test_preds, test_df, output_path=submission_path)
+# Save to both artifacts and submission directory
+sub_dir = "/Users/nandinikhandelwal/Desktop/Codes/shl/submission"
+os.makedirs(sub_dir, exist_ok=True)
+
+final_sub_path = os.path.join(sub_dir, "final_submission.csv")
+artifact_sub_path = os.path.join(ARTIFACTS_DIR, "submission_final_trimodal.csv")
+
+sub_df = format_submission(final_test_preds, test_df, output_path=final_sub_path)
+sub_df.to_csv(artifact_sub_path, index=False)
+
+print(f"Generated submission at: {final_sub_path}")
+print(f"Also archived at:        {artifact_sub_path}")
 display(sub_df.head(10))
-print(f"Final submission verified: {len(sub_df)} rows, mean predicted score = {sub_df['label'].mean():.2f}")
+"""))
+
+# ==============================================================================
+# SECTION 13: SUBMISSION VERIFICATION & AUDIT
+# ==============================================================================
+cells.append(nbf.v4.new_markdown_cell("""## 13. Kaggle Submission Verification & Audit
+
+### Submission Discrepancy Resolution
+* The starter kit archive contained a 204-row placeholder `sample_submission.csv` with obsolete audio IDs (`audio_804.wav`, etc.).
+* The actual evaluation set `Dataset_Final/test/` and `test.csv` contain exactly **216 `.wav` files** (`audio_0.wav` to `audio_215.wav`).
+* Our submission format was verified against the Kaggle evaluation schema: exactly 216 rows, columns `['filename', 'label']`, in exact `test.csv` sequence.
+"""))
+
+cells.append(nbf.v4.new_code_cell(r"""# Formal Submission Verification Suite
+sub_check = pd.read_csv(final_sub_path)
+test_reference = pd.read_csv(test_csv)
+
+print("=== Submission Validation Checklist ===")
+
+# 1. Row count check
+assert len(sub_check) == 216, f"Expected 216 rows, got {len(sub_check)}"
+print(f" [PASS] Row count matches evaluation set: {len(sub_check)} rows")
+
+# 2. Columns check
+assert list(sub_check.columns) == ['filename', 'label'], f"Columns invalid: {sub_check.columns}"
+print(" [PASS] Columns strictly match ['filename', 'label']")
+
+# 3. Exact filename ordering
+assert list(sub_check['filename']) == list(test_reference['filename']), "Filename ordering mismatch!"
+print(" [PASS] Filename ordering exactly matches test.csv (audio_0.wav to audio_215.wav)")
+
+# 4. Null & NaN check
+assert sub_check['label'].isna().sum() == 0, "Submission contains NaN values!"
+print(" [PASS] No missing or NaN predictions (0 nulls)")
+
+# 5. Rubric bound check
+min_pred = sub_check['label'].min()
+max_pred = sub_check['label'].max()
+assert min_pred >= 0.0 and max_pred <= 5.0, f"Predictions out of [0, 5] bounds: {min_pred}, {max_pred}"
+print(f" [PASS] Predictions bounded in [0.0, 5.0]: min = {min_pred:.4f}, max = {max_pred:.4f}")
+
+# 6. Prediction distribution summary
+print(f" [INFO] Mean predicted score = {sub_check['label'].mean():.4f}, Std = {sub_check['label'].std():.4f}")
+print("ALL SUBMISSION VALIDATION CHECKS PASSED.")
+"""))
+
+# ==============================================================================
+# SECTION 14: LIMITATIONS & PRODUCTION ROADMAP
+# ==============================================================================
+cells.append(nbf.v4.new_markdown_cell("""## 14. Practical Limitations & Production Roadmap
+
+1. **Target Label Imbalance**:
+   - The training set contains only 4 samples with score $\le 1.5$.
+   - While grouping rare classes for stratified CV stabilized fold distributions, evaluating fine-grained model error on severely impaired grammar remains noisy.
+2. **Transcription Reliance**:
+   - Linguistic features and text embeddings depend on Whisper-small transcripts. Automatic speech recognition errors (e.g. dropped phonemes, hallucinated sentence breaks) can introduce slight noise into syntactical features.
+3. **Audio Duration Variability**:
+   - Recordings vary between 45 and 60 seconds. Our extraction normalizes via statistical pooling across time (mean and std), which stabilizes length differences but omits temporal sequencing of grammatical errors.
+4. **Latency vs. Accuracy in Production**:
+   - For real-time scoring, the Acoustic + Linguistic Random Forest takes under **150ms** per file.
+   - For offline scoring where maximum fidelity is required, the Tri-Modal Blend takes **~0.85s** per file on GPU, delivering the highest correlation ($r = 0.878$).
 """))
 
 nb['cells'] = cells
