@@ -1,0 +1,3 @@
+model,local_oof_rmse,local_oof_pearson,submission_file,kaggle_submission_id,kaggle_score,timestamp
+"Tri-Modal Blend (50% Speech, 30% RF, 20% MiniLM)",0.6304,0.8786,submission/final_submission_trimodal.csv,PENDING,PENDING,2026-10-06T19:43:15.546514
+All-Modalities Ridge (2018 feats),0.617,0.8671,submission/final_submission_all_ridge.csv,PENDING,PENDING,2026-10-06T19:43:15.546519

@@ -13,7 +13,10 @@ ENV/
 data/
 *.csv
 !artifacts/experiment_log.csv
+!artifacts/submission_log.csv
 !submission/final_submission.csv
+!submission/final_submission_trimodal.csv
+!submission/final_submission_all_ridge.csv
 *.tsv
 *.parquet
 *.zip
